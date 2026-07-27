@@ -1,25 +1,34 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, withPrismaFallback } from "@/lib/prisma";
 import { PostingsTicker } from "@/components/PostingsTicker";
 
 const TICKER_JOB_LIMIT = 7;
 
 export async function LatestPostingsTicker() {
-  const latestJobs = await prisma.job.findMany({
-    select: {
-      id: true,
-      title: true,
-      location: true,
-      company: {
+  const latestJobs = await withPrismaFallback(
+    () =>
+      prisma.job.findMany({
         select: {
-          name: true,
+          id: true,
+          title: true,
+          location: true,
+          company: {
+            select: {
+              name: true,
+            },
+          },
         },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: TICKER_JOB_LIMIT,
-  });
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: TICKER_JOB_LIMIT,
+      }),
+    [],
+    "latest jobs ticker",
+  );
+
+  if (latestJobs.length === 0) {
+    return null;
+  }
 
   return (
     <PostingsTicker

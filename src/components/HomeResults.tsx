@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { prisma, withPrismaFallback } from "@/lib/prisma";
 import {
   getJobsData,
   type JobSearchParams,
@@ -29,27 +29,41 @@ export async function HomeResults({
   ] = await Promise.all([
     getJobsData(searchParams),
 
-    prisma.company.count(),
+    withPrismaFallback(
+      () => prisma.company.count(),
+      0,
+      "company.count",
+    ),
 
-    prisma.job.count({
-      where: {
-        workMode: "REMOTE",
-      },
-    }),
-
-    prisma.company.findMany({
-      include: {
-        _count: {
-          select: {
-            jobs: true,
+    withPrismaFallback(
+      () =>
+        prisma.job.count({
+          where: {
+            workMode: "REMOTE",
           },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 6,
-    }),
+        }),
+      0,
+      "job.count remote",
+    ),
+
+    withPrismaFallback(
+      () =>
+        prisma.company.findMany({
+          include: {
+            _count: {
+              select: {
+                jobs: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 6,
+        }),
+      [],
+      "company.findMany home",
+    ),
   ]);
 
   return (

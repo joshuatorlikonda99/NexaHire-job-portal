@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma, withPrismaFallback } from "@/lib/prisma";
 import { CompanyCard } from "@/components/CompanyCard";
 import { BuildingIcon, CheckCircleIcon, SparklesIcon } from "@/components/Icons";
 
@@ -17,10 +17,15 @@ export const metadata: Metadata = {
 };
 
 export default async function CompaniesPage() {
-  const companies = await prisma.company.findMany({
-    include: { _count: { select: { jobs: true } } },
-    orderBy: [{ createdAt: "desc" }, { name: "asc" }],
-  });
+  const companies = await withPrismaFallback(
+    () =>
+      prisma.company.findMany({
+        include: { _count: { select: { jobs: true } } },
+        orderBy: [{ createdAt: "desc" }, { name: "asc" }],
+      }),
+    [],
+    "companies directory",
+  );
 
   return (
     <>

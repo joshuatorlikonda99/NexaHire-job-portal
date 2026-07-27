@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, withPrismaFallback } from "@/lib/prisma";
 import {
   getJobsData,
   hasActiveJobFilters,
@@ -11,8 +11,12 @@ import { BriefcaseIcon, BuildingIcon, MapPinIcon } from "@/components/Icons";
 export async function JobResults({ searchParams }: { searchParams: JobSearchParams }) {
   const [jobsData, companyCount, remoteCount] = await Promise.all([
     getJobsData(searchParams),
-    prisma.company.count(),
-    prisma.job.count({ where: { workMode: "REMOTE" } }),
+    withPrismaFallback(() => prisma.company.count(), 0, "company.count"),
+    withPrismaFallback(
+      () => prisma.job.count({ where: { workMode: "REMOTE" } }),
+      0,
+      "job.count remote",
+    ),
   ]);
   const filtered = hasActiveJobFilters(searchParams);
 

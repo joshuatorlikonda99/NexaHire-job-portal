@@ -3,7 +3,9 @@
 // (free M0 clusters are replica sets) or a local single-node replica set.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Ensure the Linux OpenSSL 3 engine is available on Vercel serverless.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
