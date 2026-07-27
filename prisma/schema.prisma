@@ -1,0 +1,62 @@
+// Prisma schema for the Jobs Board.
+// Provider is MongoDB. Requires a replica-set deployment — use MongoDB Atlas
+// (free M0 clusters are replica sets) or a local single-node replica set.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String   @unique
+  website   String?
+  location  String?
+  about     String?
+  logoColor String   @default("#0F766E")
+  createdAt DateTime @default(now())
+
+  jobs      Job[]
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+model Job {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String
+  location       String
+  employmentType EmploymentType @default(FULL_TIME)
+  workMode       WorkMode       @default(ONSITE)
+  salaryMin      Int?
+  salaryMax      Int?
+  tags           String[]
+  createdAt      DateTime       @default(now())
+
+  companyId      String         @db.ObjectId
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([workMode])
+  @@index([employmentType])
+  @@index([salaryMax])
+  @@index([companyId, createdAt])
+  @@index([workMode, createdAt])
+  @@index([employmentType, createdAt])
+}
